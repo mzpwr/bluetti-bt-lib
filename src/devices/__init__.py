@@ -1,6 +1,8 @@
 import re
 
 from .ac2a import AC2A
+from .ac60 import AC60
+from .ac60p import AC60P
 from .ac70 import AC70
 from .ac180 import AC180
 from .eb3a import EB3A
@@ -9,6 +11,8 @@ from .handsfree1 import Handsfree1
 # Add new device classes here
 DEVICES = {
     "AC2A": AC2A,
+    "AC60": AC60,
+    "AC60P": AC60P,
     "AC70": AC70,
     "AC180": AC180,
     "EB3A": EB3A,
