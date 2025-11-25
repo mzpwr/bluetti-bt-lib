@@ -15,8 +15,8 @@ class BaseDeviceV1(BluettiDevice):
                 UIntField(FieldName.BATTERY_SOC, 43),
                 UIntField(FieldName.DC_INPUT_POWER, 36),
                 UIntField(FieldName.AC_INPUT_POWER, 37),
-                UIntField(FieldName.DC_OUTPUT_POWER, 38),
-                UIntField(FieldName.AC_OUTPUT_POWER, 39),
+                UIntField(FieldName.AC_OUTPUT_POWER, 38),
+                UIntField(FieldName.DC_OUTPUT_POWER, 39),
             ]
             + additional_fields,
         )

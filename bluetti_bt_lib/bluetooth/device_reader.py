@@ -2,15 +2,18 @@ import asyncio
 import logging
 import async_timeout
 from typing import Any, Callable, List, cast
-from bleak import BleakClient
+from bleak import BleakScanner
 from bleak.exc import BleakError
+from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
 from .encryption import BluettiEncryption, Message, MessageType
 from ..registers import ReadableRegisters
 from ..const import NOTIFY_UUID, WRITE_UUID
 from ..base_devices import BluettiDevice
 
+logging.basicConfig()
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 class DeviceReaderConfig:
@@ -22,17 +25,20 @@ class DeviceReaderConfig:
 class DeviceReader:
     def __init__(
         self,
-        bleak_client: BleakClient,
+        mac: str,
         bluetti_device: BluettiDevice,
         future_builder_method: Callable[[], asyncio.Future[Any]],
         config: DeviceReaderConfig = DeviceReaderConfig(),
         lock: asyncio.Lock = asyncio.Lock(),
     ):
-        self.client = bleak_client
+        self.mac = mac
         self.bluetti_device = bluetti_device
         self.create_future = future_builder_method
         self.config = config
         self.polling_lock = lock
+
+        self.device = None
+        self.client = None
 
         self.has_notifier = False
         self.current_registers = None
@@ -43,6 +49,7 @@ class DeviceReader:
     async def read(
         self, only_registers: List[ReadableRegisters] | None = None
     ) -> dict | None:
+
         registers = self.bluetti_device.get_polling_registers()
 
         if only_registers is not None:
@@ -55,9 +62,23 @@ class DeviceReader:
         async with self.polling_lock:
             try:
                 async with async_timeout.timeout(self.config.timeout):
-                    if not self.client.is_connected:
-                        _LOGGER.debug("Connecting to device")
-                        await self.client.connect()
+                    _LOGGER.debug("Searching for %s", self.mac)
+                    self.device = await BleakScanner.find_device_by_address(
+                        self.mac, timeout=5
+                    )
+
+                    if self.device is None:
+                        _LOGGER.error("Device not found")
+                        return
+
+                    _LOGGER.debug("Connecting to %s", self.mac)
+
+                    self.client = await establish_connection(
+                        BleakClientWithServiceCache,
+                        self.device,
+                        self.device.name or "Unknown Device",
+                        max_attempts=10,
+                    )
 
                     _LOGGER.debug("Connected to device")
 
@@ -98,7 +119,7 @@ class DeviceReader:
                 _LOGGER.warning("Bleak error: %s", err)
                 return None
             except BaseException as err:
-                _LOGGER.warning("Unknown error: %s", err)
+                _LOGGER.warning("Unknown error %s", err)
                 return None
             finally:
                 if self.has_notifier:
@@ -109,8 +130,9 @@ class DeviceReader:
                         # Ignore errors here
                         pass
                     self.has_notifier = False
-                await self.client.disconnect()
-                _LOGGER.debug("Disconnected from device")
+                if self.client:
+                    await self.client.disconnect()
+                    _LOGGER.debug("Disconnected from device")
 
             # Reset Encryption keys
             self.encryption.reset()

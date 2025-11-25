@@ -10,7 +10,6 @@ from ..fields import FieldName, get_unit
 
 
 async def async_read_device(address: str, type: str, encryption: bool):
-    client = BleakClient(address)
     built = build_device(type + "12345678")
 
     if built is None:
@@ -20,7 +19,7 @@ async def async_read_device(address: str, type: str, encryption: bool):
     print("Client created")
 
     reader = DeviceReader(
-        client, built, asyncio.Future, DeviceReaderConfig(use_encryption=encryption)
+        address, built, asyncio.Future, DeviceReaderConfig(use_encryption=encryption)
     )
 
     print("Reader created")

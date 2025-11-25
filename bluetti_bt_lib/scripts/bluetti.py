@@ -2,7 +2,7 @@
 
 import asyncio
 from typing import List
-from bleak import BleakClient, BleakScanner
+from bleak import BleakScanner
 from bleak.backends.device import BLEDevice
 
 from ..bluetooth import DeviceReader, DeviceReaderConfig
@@ -12,12 +12,10 @@ from ..utils.device_builder import build_device
 
 
 async def read_device(address: str):
-    client = BleakClient(address)
-
     print("Detecting device type")
     print()
 
-    recognized = await recognize_device(client, asyncio.Future)
+    recognized = await recognize_device(address, asyncio.Future)
 
     if recognized is None:
         print("Unable to find device type information")
@@ -40,7 +38,7 @@ async def read_device(address: str):
     print("Client created")
 
     reader = DeviceReader(
-        client, built, asyncio.Future, DeviceReaderConfig(10, recognized.encrypted)
+        address, built, asyncio.Future, DeviceReaderConfig(10, recognized.encrypted)
     )
 
     print("Reader created")

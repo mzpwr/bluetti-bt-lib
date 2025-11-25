@@ -9,7 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-VERSION = "0.0.10"
+VERSION = "0.0.11"
 DESCRIPTION = "Bluetti BT"
 
 # Setting up
@@ -27,6 +27,7 @@ setup(
         "async_timeout",
         "asyncio",
         "bleak",
+        "bleak_retry_connector",
         "crcmod",
         "cryptography",
         "logging",

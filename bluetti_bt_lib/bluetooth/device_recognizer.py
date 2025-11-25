@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from typing import Any, Callable, List
-from bleak import BleakClient
 
 from ..fields import FieldName
 from ..base_devices import BluettiDevice, BaseDeviceV1, BaseDeviceV2
@@ -22,7 +21,7 @@ class DeviceRecognizerResult:
 
 
 async def recognize_device(
-    bleak_client: BleakClient,
+    mac: str,
     future_builder_method: Callable[[], asyncio.Future[Any]],
 ) -> DeviceRecognizerResult | None:
     # Since we don't know the type we use the base device
@@ -35,19 +34,19 @@ async def recognize_device(
         # Create device builder
         device_readers = [
             DeviceReader(
-                bleak_client,
+                mac,
                 bluetti_device,
                 future_builder_method,
                 DeviceReaderConfig(
-                    timeout=8,
+                    timeout=15,
                     use_encryption=True,
                 ),
             ),
             DeviceReader(
-                bleak_client,
+                mac,
                 bluetti_device,
                 future_builder_method,
-                DeviceReaderConfig(timeout=3),
+                DeviceReaderConfig(timeout=8),
             ),
         ]
 
