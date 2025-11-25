@@ -11,9 +11,7 @@ from ..registers import ReadableRegisters
 from ..const import NOTIFY_UUID, WRITE_UUID
 from ..base_devices import BluettiDevice
 
-logging.basicConfig()
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 class DeviceReaderConfig:
