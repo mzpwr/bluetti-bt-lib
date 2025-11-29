@@ -7,7 +7,7 @@ assignees: Patrick762
 
 ---
 
-[//]: Use the bluetti-detect command to get this information. You can find the bluetooth mac address with tools like wifiman
+<!--Use the bluetti-detect command to get this information. You can find the bluetooth mac address with tools like wifiman-->
 
 ## General
 
