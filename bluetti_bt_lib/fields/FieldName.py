@@ -3,13 +3,16 @@ from enum import Enum, unique
 
 @unique
 class FieldName(Enum):
+    AC_INPUT_CURRENT = "ac_input_current"
     AC_INPUT_FREQUENCY = "ac_input_frequency"
     AC_INPUT_POWER = "ac_input_power"
     AC_INPUT_VOLTAGE = "ac_input_voltage"
     AC_OUTPUT_FREQUENCY = "ac_output_frequency"
     AC_OUTPUT_MODE = "ac_output_mode"
     AC_OUTPUT_ON = "ac_output_on"
+    AC_OUTPUT_CURRENT = "ac_output_current"
     AC_OUTPUT_POWER = "ac_output_power"
+    AC_OUTPUT_VOLTAGE = "ac_output_voltage"
     AC_P1_CURRENT = "ac_p1_current"
     AC_P1_POWER = "ac_p1_power"
     AC_P1_VOLTAGE = "ac_p1_voltage"
@@ -28,7 +31,9 @@ class FieldName(Enum):
     CTRL_LED_MODE = "ctrl_led_mode"
     CTRL_POWER_LIFTING = "ctrl_power_lifting"
     CTRL_POWER_OFF = "ctrl_power_off"
+    DC_INPUT_CURRENT = "dc_input_current"
     DC_INPUT_POWER = "dc_input_power"
+    DC_INPUT_VOLTAGE = "dc_input_voltage"
     DC_OUTPUT_ON = "dc_output_on"
     DC_OUTPUT_POWER = "dc_output_power"
     DEVICE_TYPE = "device_type"

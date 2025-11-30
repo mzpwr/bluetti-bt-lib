@@ -2,11 +2,14 @@ from typing import Dict
 from .FieldName import FieldName
 
 FIELD_UNIT: Dict[FieldName, str] = {
+    FieldName.AC_INPUT_CURRENT: "A",
     FieldName.AC_INPUT_FREQUENCY: "Hz",
     FieldName.AC_INPUT_POWER: "W",
     FieldName.AC_INPUT_VOLTAGE: "V",
+    FieldName.AC_OUTPUT_CURRENT: "A",
     FieldName.AC_OUTPUT_FREQUENCY: "Hz",
     FieldName.AC_OUTPUT_POWER: "W",
+    FieldName.AC_OUTPUT_VOLTAGE: "V",
     FieldName.AC_P1_CURRENT: "A",
     FieldName.AC_P1_POWER: "W",
     FieldName.AC_P1_VOLTAGE: "V",
@@ -17,7 +20,9 @@ FIELD_UNIT: Dict[FieldName, str] = {
     FieldName.AC_P3_POWER: "W",
     FieldName.AC_P3_VOLTAGE: "V",
     FieldName.BATTERY_SOC: "%",
+    FieldName.DC_INPUT_CURRENT: "A",
     FieldName.DC_INPUT_POWER: "W",
+    FieldName.DC_INPUT_VOLTAGE: "V",
     FieldName.DC_OUTPUT_POWER: "W",
     FieldName.GRID_FREQUENCY: "Hz",
     FieldName.GRID_P1_CURRENT: "A",
