@@ -112,7 +112,7 @@ Added and mostly validated by contributors (some are moved here from the HA Inte
 |AC2A       |@ruanmed        |✅                   |✅            |✅            |✅             |✅             |
 |AC60       |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
 |AC60P      |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
-|AC70P      |@matthewpucc    |✅                   |❌            |❌            |❌             |❌             |
+|AC70P      |@matthewpucc    |✅                   |✅            |✅            |✅             |✅             |
 |AC180P     |@Patrick762     |✅                   |✅            |✅            |✅             |✅             |
 |AC200L     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
 |AC200M     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
