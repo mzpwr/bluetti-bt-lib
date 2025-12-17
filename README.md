@@ -5,6 +5,57 @@ Core functions based on https://github.com/warhammerkid/bluetti_mqtt
 ## Disclaimer
 This library is provided without any warranty or support by Bluetti. I do not take responsibility for any problems it may cause in all cases. Use it at your own risk.
 
+## Projects using this library
+
+- [Home Assistant Integration](https://github.com/Patrick762/hassio-bluetti-bt)
+- MQTT Server (planned)
+- UPS Server (NUT compatible) (planned)
+
+## Supported Powerstations and data
+
+Validated
+
+|Device Name|total_battery_percent|dc_input_power|ac_input_power|dc_output_power|ac_output_power|
+|-----------|---------------------|--------------|--------------|---------------|---------------|
+|AC70       |✅                   |✅            |✅            |✅             |✅             |
+|AC180      |✅                   |✅            |✅            |✅             |✅             |
+|EB3A       |✅                   |✅            |✅            |✅             |✅             |
+|EP600      |✅                   |PV            |Grid          |❌             |AC Phases      |
+|Handsfree 1|✅                   |✅            |✅            |✅             |✅             |
+
+Added and mostly validated by contributors (some are moved here from the HA Integration https://github.com/Patrick762/hassio-bluetti-bt):
+
+|Device Name|Contributor     |total_battery_percent|dc_input_power|ac_input_power|dc_output_power|ac_output_power|
+|-----------|----------------|---------------------|--------------|--------------|---------------|---------------|
+|AC2A       |@ruanmed        |✅                   |✅            |✅            |✅             |✅             |
+|AC60       |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
+|AC60P      |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
+|AC70P      |@matthewpucc    |✅                   |✅            |✅            |✅             |✅             |
+|AC180P     |@Patrick762     |✅                   |✅            |✅            |✅             |✅             |
+|AC200L     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|AC200M     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|AC200PL    |@0x4E4448       |✅                   |✅            |✅            |✅             |✅             |
+|AC300      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|AC500      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|EP500      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|EP500P     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
+|EP760      |@Apfuntimes     |✅                   |PV            |Grid          |❌             |AC Phases      |
+|EP800      |@jhagenk        |✅                   |❌            |❌            |❌             |❌             |
+
+## Controls
+
+Currently only "switches" are supported
+
+Validated
+
+|Device Name|ctrl_ac|ctrl_dc|
+|-----------|-------|-------|
+|EB3A       |✅     |✅     |
+
+## Battery pack data
+
+Data for battery packs will no longer be available in this library
+
 ## Installation
 
 ```bash
@@ -92,51 +143,6 @@ Example:
 ```bash
 bluetti-write -m 00:00:00:00:00:00 -t EB3A --on on ctrl_ac
 ```
-
-## Supported Powerstations and data
-
-Validated
-
-|Device Name|total_battery_percent|dc_input_power|ac_input_power|dc_output_power|ac_output_power|
-|-----------|---------------------|--------------|--------------|---------------|---------------|
-|AC70       |✅                   |✅            |✅            |✅             |✅             |
-|AC180      |✅                   |✅            |✅            |✅             |✅             |
-|EB3A       |✅                   |✅            |✅            |✅             |✅             |
-|EP600      |✅                   |PV            |Grid          |❌             |AC Phases      |
-|Handsfree 1|✅                   |✅            |✅            |✅             |✅             |
-
-Added and mostly validated by contributors (some are moved here from the HA Integration https://github.com/Patrick762/hassio-bluetti-bt):
-
-|Device Name|Contributor     |total_battery_percent|dc_input_power|ac_input_power|dc_output_power|ac_output_power|
-|-----------|----------------|---------------------|--------------|--------------|---------------|---------------|
-|AC2A       |@ruanmed        |✅                   |✅            |✅            |✅             |✅             |
-|AC60       |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
-|AC60P      |@mzpwr          |✅                   |✅            |✅            |✅             |✅             |
-|AC70P      |@matthewpucc    |✅                   |✅            |✅            |✅             |✅             |
-|AC180P     |@Patrick762     |✅                   |✅            |✅            |✅             |✅             |
-|AC200L     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|AC200M     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|AC200PL    |@0x4E4448       |✅                   |✅            |✅            |✅             |✅             |
-|AC300      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|AC500      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|EP500      |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|EP500P     |bluetti-mqtt    |✅                   |✅            |✅            |✅             |✅             |
-|EP760      |@Apfuntimes     |✅                   |PV            |Grid          |❌             |AC Phases      |
-|EP800      |@jhagenk        |✅                   |❌            |❌            |❌             |❌             |
-
-## Controls
-
-Currently only "switches" are supported
-
-Validated
-
-|Device Name|ctrl_ac|ctrl_dc|
-|-----------|-------|-------|
-|EB3A       |✅     |✅     |
-
-## Battery pack data
-
-Data for battery packs will no longer be available in this library
 
 ## Adding fields
 
