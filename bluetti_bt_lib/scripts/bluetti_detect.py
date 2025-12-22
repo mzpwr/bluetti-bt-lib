@@ -37,6 +37,6 @@ def start():
         parser.print_help()
         return
 
-    logging.basicConfig(level=logging.DEBUG)
+    # logging.basicConfig(level=logging.DEBUG)
 
     asyncio.run(async_detect_device(args.mac))

@@ -64,6 +64,8 @@ pip install bluetti-bt-lib
 
 ## Commands for testing
 
+Commands included in this library should only be used for testing.
+
 ### Scan for supported devices
 
 ```bash
@@ -117,6 +119,8 @@ bluetti-read -m 00:00:00:00:00:00 -t AC70
 ```
 
 ### Write to supported device
+
+INFO: Devices with encryption are currently not supported!
 
 ```bash
 usage: bluetti-write [-h] [-m MAC] [-t TYPE] [--on ON] [--off OFF] [-v VALUE] [-e ENCRYPTION] field

@@ -9,7 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-VERSION = "0.0.18"
+VERSION = "0.1.0"
 DESCRIPTION = "Bluetti BT"
 
 # Setting up
@@ -36,7 +36,6 @@ setup(
     keywords=[],
     entry_points={
         "console_scripts": [
-            "bluetti = bluetti_bt_lib.scripts.bluetti:start",
             "bluetti-scan = bluetti_bt_lib.scripts.bluetti_scan:start",
             "bluetti-detect = bluetti_bt_lib.scripts.bluetti_detect:start",
             "bluetti-read = bluetti_bt_lib.scripts.bluetti_read:start",
@@ -45,7 +44,7 @@ setup(
         ],
     },
     classifiers=[
-        "Development Status :: 1 - Planning",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
     ],
