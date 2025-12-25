@@ -200,3 +200,5 @@ options:
 ```
 
 With the separate tool at [bluetti-bt-raw-reader](https://github.com/Patrick762/bluetti-bt-raw-reader) you can view those values in a more understandable way.
+
+You can also share the output with me using [this form](https://forms.gle/ewp7DYigtaN3ZLc68)
