@@ -6,7 +6,7 @@ import logging
 from typing import Any
 from bleak import BleakClient
 
-from ..bluetooth import DeviceWriter, DeviceWriterConfig
+from ..bluetooth import DeviceConnection, DeviceWriter, DeviceWriterConfig
 from ..utils.device_builder import build_device
 
 
@@ -22,19 +22,26 @@ async def async_write(
     config = DeviceWriterConfig(use_encryption=encryption)
 
     if encryption:
+        connection = DeviceConnection(address, use_encryption=True)
         writer = DeviceWriter(
+            None,
             built,
-            config,
-            address=address,
-            future_builder=asyncio.Future,
+            config=config,
+            connection=connection,
         )
         print("Writer created (encrypted)")
+        try:
+            ok = await writer.write(field, value)
+            if ok:
+                await asyncio.sleep(0.5)
+        finally:
+            await connection.disconnect()
     else:
         client = BleakClient(address)
-        writer = DeviceWriter(built, config, bleak_client=client)
+        writer = DeviceWriter(client, built, config=config)
         print("Writer created")
+        ok = await writer.write(field, value)
 
-    ok = await writer.write(field, value)
     if ok:
         print("Write command sent successfully")
     else:

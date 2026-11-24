@@ -7,6 +7,7 @@ from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from cryptography.exceptions import InvalidSignature
 
+from .device_connection import DeviceConnection
 from .encryption import BluettiEncryption, Message, MessageType, AES_BLOCK_SIZE
 from ..base_devices import BluettiDevice
 from ..const import NOTIFY_UUID, WRITE_UUID
@@ -15,9 +16,15 @@ from ..utils.privacy import mac_loggable
 
 
 class DeviceReaderConfig:
-    def __init__(self, timeout: int = 60, use_encryption: bool = False):
+    def __init__(
+        self,
+        timeout: int = 60,
+        use_encryption: bool = False,
+        keep_alive_seconds: float = 0,
+    ):
         self.timeout = timeout
         self.use_encryption = use_encryption
+        self.keep_alive_seconds = keep_alive_seconds
 
 
 class DeviceReader:
@@ -29,12 +36,14 @@ class DeviceReader:
         config: DeviceReaderConfig | None = None,
         lock: asyncio.Lock | None = None,
         ble_client: BleakClient | None = None,
+        connection: DeviceConnection | None = None,
     ):
         self.mac = mac
         self.bluetti_device = bluetti_device
         self.create_future = future_builder_method
         self.config = config if config is not None else DeviceReaderConfig()
         self.polling_lock = lock if lock is not None else asyncio.Lock()
+        self.connection = connection
 
         self.ble_client = ble_client
         """Used for unittests"""
@@ -52,6 +61,7 @@ class DeviceReader:
         self.notify_future: asyncio.Future[Any] | None = None
         self.encryption = BluettiEncryption()
         self.encrypted_buffer = bytearray()
+        self._disconnect_task: asyncio.Task[Any] | None = None
 
     async def read(
         self, only_registers: List[ReadableRegisters] | None = None, raw: bool = False
@@ -69,49 +79,18 @@ class DeviceReader:
         self.logger.debug("Reading device registers")
 
         async with self.polling_lock:
+            if self._disconnect_task is not None and not self._disconnect_task.done():
+                self._disconnect_task.cancel()
+                self._disconnect_task = None
+
             try:
                 async with async_timeout.timeout(self.config.timeout):
-                    self.logger.debug("Searching for device")
-
-                    if self.ble_client:
-                        self.device = None
+                    if self.connection is not None:
+                        await self._connect_via_shared_connection()
                     else:
-                        self.device = await BleakScanner.find_device_by_address(
-                            self.mac, timeout=5
-                        )
-
-                        if self.device is None:
-                            self.logger.error("Device not found")
-                            return
-
-                    self.logger.debug("Connecting to device")
-
-                    if self.ble_client:
-                        self.client = self.ble_client
-                    else:
-                        self.client = await establish_connection(
-                            BleakClientWithServiceCache,
-                            self.device,
-                            self.device.name or "Unknown Device",
-                            max_attempts=10,
-                        )
-
-                    self.logger.debug("Connected to device")
-
-                    if not self.has_notifier:
-                        await self.client.start_notify(
-                            NOTIFY_UUID, self._notification_handler
-                        )
-                        self.has_notifier = True
+                        await self._connect_standalone()
 
                     self.logger.debug("Notification handler setup complete")
-
-                    while (
-                        self.config.use_encryption
-                        and not self.encryption.is_ready_for_commands
-                    ):
-                        await asyncio.sleep(5)
-                        self.logger.debug("Encryption handshake not finished yet")
 
                     for register in registers:
                         body = register.parse_response(
@@ -172,24 +151,17 @@ class DeviceReader:
             except BleakError as err:
                 self.logger.warning("Bleak error: %s", err)
                 return None
-            except BaseException as err:
+            except Exception as err:
                 self.logger.warning("Unknown error %s", err)
                 return None
             finally:
-                if self.has_notifier:
-                    try:
-                        await self.client.stop_notify(NOTIFY_UUID)
-                        self.logger.debug("Stopped notifier")
-                    except:
-                        # Ignore errors here
-                        pass
-                    self.has_notifier = False
-                if self.client:
-                    await self.client.disconnect()
-                    self.logger.debug("Disconnected from device")
-
-                self.encryption.reset()
-                self.encrypted_buffer.clear()
+                if self.connection is not None:
+                    self.connection.clear_data_callback()
+                    self._disconnect_task = asyncio.ensure_future(
+                        self._deferred_disconnect()
+                    )
+                else:
+                    await self._teardown_standalone_connection()
 
             # Check if dict is empty
             if not parsed_data:
@@ -197,22 +169,92 @@ class DeviceReader:
 
             return parsed_data
 
+    async def _connect_via_shared_connection(self) -> None:
+        """Use an existing DeviceConnection instead of creating a new one."""
+        connected = await self.connection.ensure_connected()
+        if not connected:
+            raise BleakError("Could not connect to device via shared connection")
+        self.client = self.connection.client
+        self.connection.set_data_callback(self._on_data)
+        self.logger.debug("Using shared connection")
+
+    async def _connect_standalone(self) -> None:
+        """Scan, connect, and subscribe to notifications independently."""
+        self.logger.debug("Searching for device")
+
+        if self.ble_client:
+            self.device = None
+            self.client = self.ble_client
+        else:
+            self.device = await BleakScanner.find_device_by_address(
+                self.mac, timeout=5
+            )
+
+            if self.device is None:
+                self.logger.error("Device not found")
+                raise BleakError("Device not found")
+
+            self.logger.debug("Connecting to device")
+            self.client = await establish_connection(
+                BleakClientWithServiceCache,
+                self.device,
+                self.device.name or "Unknown Device",
+                max_attempts=10,
+            )
+
+        self.logger.debug("Connected to device")
+
+        if not self.has_notifier:
+            await self.client.start_notify(NOTIFY_UUID, self._notification_handler)
+            self.has_notifier = True
+
+        while (
+            self.config.use_encryption
+            and not self.encryption.is_ready_for_commands
+        ):
+            await asyncio.sleep(5)
+            self.logger.debug("Encryption handshake not finished yet")
+
+    async def _deferred_disconnect(self) -> None:
+        """Wait keep_alive_seconds, then disconnect to free the BLE slot."""
+        try:
+            if self.config.keep_alive_seconds > 0:
+                await asyncio.sleep(self.config.keep_alive_seconds)
+            if self.connection is not None:
+                await self.connection.disconnect()
+        except asyncio.CancelledError:
+            pass
+
+    async def _teardown_standalone_connection(self) -> None:
+        """Stop notifications, disconnect own client, and reset encryption state."""
+        if self.has_notifier:
+            try:
+                await self.client.stop_notify(NOTIFY_UUID)
+                self.logger.debug("Stopped notifier")
+            except Exception:
+                pass
+            self.has_notifier = False
+        if self.client:
+            await self.client.disconnect()
+            self.logger.debug("Disconnected from device")
+
+        self.encryption.reset()
+        self.encrypted_buffer.clear()
+
     async def _async_send_command(self, registers: DeviceRegister) -> bytes:
         """Send command and return response"""
         self.current_registers = registers
         self.notify_response = bytearray()
         self.notify_future = self.create_future()
-        self.encrypted_buffer.clear()
+        if self.connection is not None:
+            if hasattr(self.connection, "clear_buffer"):
+                self.connection.clear_buffer()
+        else:
+            self.encrypted_buffer.clear()
 
-        command_bytes = bytes(registers)
-
-        # Encrypt command
-        if self.config.use_encryption is True:
-            if not self.encryption.is_ready_for_commands:
-                return bytes()
-            command_bytes = self.encryption.aes_encrypt(
-                command_bytes, self.encryption.secure_aes_key, None
-            )
+        command_bytes = self._build_command_bytes(registers)
+        if not command_bytes:
+            return bytes()
 
         try:
             # Make request
@@ -226,10 +268,36 @@ class DeviceReader:
             self.logger.debug("Got response")
 
             return cast(bytes, res)
-        except:
+        except Exception:
             self.logger.warning("Error while reading data")
 
         return bytes()
+
+    def _build_command_bytes(self, registers: DeviceRegister) -> bytes:
+        """Build and optionally encrypt command bytes."""
+        command_bytes = bytes(registers)
+        if self.config.use_encryption is True:
+            enc = (
+                self.connection.encryption
+                if self.connection is not None
+                else self.encryption
+            )
+            if not enc.is_ready_for_commands:
+                return bytes()
+            return enc.aes_encrypt(command_bytes, enc.secure_aes_key, None)
+        return command_bytes
+
+    def _on_data(self, data: bytes) -> None:
+        """Receive a decrypted Modbus response from shared connection or standalone handler."""
+        if self.notify_future is None:
+            return
+
+        if self.notify_future.done():
+            self.logger.debug("Dropping notification for already completed future")
+            return
+
+        self.notify_response.extend(data)
+        self.notify_future.set_result(self.notify_response)
 
     def _calculate_expected_encrypted_length(self, buffer: bytearray) -> int | None:
         """Calculate expected total length of an encrypted message."""
@@ -251,7 +319,7 @@ class DeviceReader:
         return header_size + padded_len
 
     async def _notification_handler(self, _: int, data: bytearray):
-        """Handle bt data."""
+        """Handle bt data in standalone mode."""
         self.logger.debug("Got new data (%d bytes)", len(data))
 
         if self.config.use_encryption is True:
@@ -378,16 +446,4 @@ class DeviceReader:
             # Handle as message
             data = decrypted.buffer
 
-        if self.notify_future is None:
-            return
-
-        if self.notify_future.done():
-            # Future was already resolved or cancelled (e.g. response timeout),
-            # so this is a late or duplicate notification we can safely drop
-            self.logger.debug("Dropping notification for already completed future")
-            return
-
-        # Save data
-        self.notify_response.extend(data)
-
-        self.notify_future.set_result(self.notify_response)
+        self._on_data(bytes(data))
