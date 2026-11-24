@@ -6,4 +6,5 @@ from .led_mode import *
 from .output_mode import *
 from .split_phase_mode import *
 from .ups_mode import *
+from .ups_mode_v2 import *
 from .working_mode import *

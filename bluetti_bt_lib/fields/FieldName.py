@@ -55,6 +55,7 @@ class FieldName(Enum):
     CTRL_POWER_OFF = "ctrl_power_off"
     CTRL_SPLIT_PHASE = "ctrl_split_phase"
     CTRL_SPLIT_PHASE_MODE = "ctrl_split_phase_mode"
+    CTRL_TIME_OF_USE = "ctrl_time_of_use"
     CTRL_UPS_MODE = "ctrl_ups_mode"
     CTRL_WORKING_MODE = "ctrl_working_mode"
     DC_2_OUTPUT_VOLTAGE = "dc_2_o_v"

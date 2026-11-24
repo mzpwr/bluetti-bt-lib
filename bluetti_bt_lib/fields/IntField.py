@@ -20,7 +20,8 @@ class IntField(DeviceField):
     def parse(self, data: bytes) -> int:
         val = struct.unpack("!h", data)[0]
         if self.multiplier != 1:
-            val = round(val * self.multiplier, 2)
+            # Adding 0 turns the -0.0 of a negative multiplier into 0.0
+            val = round(val * self.multiplier, 2) + 0
         return val
 
     def in_range(self, value: int) -> bool:

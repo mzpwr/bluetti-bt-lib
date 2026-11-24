@@ -44,6 +44,7 @@ Added and mostly validated by contributors (some are moved here from the HA Inte
 |AP300      |[@seaburger](https://github.com/seaburger), [@sidieje](https://github.com/sidieje)     |✅                   |✅             |✅             |✅             |✅             |
 |EL30V2     |[@dgudim](https://github.com/dgudim)                                                   |✅                   |✅             |✅             |✅             |✅             |
 |EL100V2    |[@seaburger](https://github.com/seaburger), [lesolas20](https://github.com/lesolas20)  |✅                   |✅             |✅             |✅             |✅             |
+|EL300      |[@suiciety](https://github.com/suiciety)                                               |✅                   |✅             |✅             |✅             |✅             |
 |EP500      |bluetti-mqtt                                                                           |✅                   |✅             |✅             |✅             |✅             |
 |EP500P     |bluetti-mqtt                                                                           |✅                   |✅             |✅             |✅             |✅             |
 |EP760      |[@Apfuntimes](https://github.com/Apfuntimes)                                           |✅                   |PV             |Grid           |❌             |AC Phases      |
@@ -51,7 +52,8 @@ Added and mostly validated by contributors (some are moved here from the HA Inte
 |Handsfree 2|[@pablogiaccaglia](https://github.com/pablogiaccaglia)                                 |✅                   |✅             |✅             |✅             |✅             |
 |PR30V2     |@gentoo90                                                                              |✅                   |✅             |✅             |✅             |✅             |
 |PR100V2    |shares PR30V2 register layout (pending validation)                                     |✅                   |✅             |✅             |✅             |✅             |
-|EL10       |[sidieje](https://github.com/sidieje)                                                  |✅                   |✅             |✅             |✅             |✅             |
+|EL10       |[sidieje](https://github.com/sidieje), [@mzpwr](https://github.com/mzpwr)              |✅                   |✅             |✅             |✅             |✅             |
+|FP         |[@rgw3d](https://github.com/rgw3d), [@madsciencetist](https://github.com/madsciencetist)|✅                   |✅             |✅             |✅             |✅             |
 
 ## Controls
 
@@ -68,6 +70,7 @@ Added and mostly validated by contributors:
 |AC200L     |bluetti-mqtt, [@seaburger](https://github.com/seaburger) |✅     |✅     |✅           |❌             |❌           |
 |EL30V2     |[@x3ccd4828](https://github.com/x3ccd4828)               |✅     |✅     |❌           |❌             |❌           |
 |Handsfree 2|[@pablogiaccaglia](https://github.com/pablogiaccaglia)   |✅     |✅     |❌           |❌             |❌           |
+|FP         |[@rgw3d](https://github.com/rgw3d), [@madsciencetist](https://github.com/madsciencetist)|✅     |✅     |✅           |❌             |❌           |
 
 ## Battery pack data
 
