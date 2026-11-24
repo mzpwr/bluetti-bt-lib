@@ -5,6 +5,7 @@ from typing import Any, Callable, List, cast
 from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
+from cryptography.exceptions import InvalidSignature
 
 from .encryption import BluettiEncryption, Message, MessageType, AES_BLOCK_SIZE
 from ..base_devices import BluettiDevice
@@ -25,15 +26,15 @@ class DeviceReader:
         mac: str,
         bluetti_device: BluettiDevice,
         future_builder_method: Callable[[], asyncio.Future[Any]],
-        config: DeviceReaderConfig = DeviceReaderConfig(),
-        lock: asyncio.Lock = asyncio.Lock(),
+        config: DeviceReaderConfig | None = None,
+        lock: asyncio.Lock | None = None,
         ble_client: BleakClient | None = None,
     ):
         self.mac = mac
         self.bluetti_device = bluetti_device
         self.create_future = future_builder_method
-        self.config = config
-        self.polling_lock = lock
+        self.config = config if config is not None else DeviceReaderConfig()
+        self.polling_lock = lock if lock is not None else asyncio.Lock()
 
         self.ble_client = ble_client
         """Used for unittests"""
@@ -134,10 +135,9 @@ class DeviceReader:
                         parsed_data.update(parsed)
 
                     for pack in range(1, self.bluetti_device.max_packs + 1):
-                        body = register.parse_response(
-                            await self._async_send_command(
-                                self.bluetti_device.get_pack_selector(pack),
-                            )
+                        pack_selector = self.bluetti_device.get_pack_selector(pack)
+                        body = pack_selector.parse_response(
+                            await self._async_send_command(pack_selector)
                         )
 
                         # We need to wait for the powerstation to populate all registers
@@ -188,9 +188,8 @@ class DeviceReader:
                     await self.client.disconnect()
                     self.logger.debug("Disconnected from device")
 
-            # Reset Encryption keys
-            self.encryption.reset()
-            self.encrypted_buffer.clear()
+                self.encryption.reset()
+                self.encrypted_buffer.clear()
 
             # Check if dict is empty
             if not parsed_data:
@@ -263,7 +262,14 @@ class DeviceReader:
 
                 if message.type == MessageType.CHALLENGE:
                     challenge_response = self.encryption.msg_challenge(message)
-                    await self.client.write_gatt_char(WRITE_UUID, challenge_response)
+                    try:
+                        await self.client.write_gatt_char(
+                            WRITE_UUID, challenge_response
+                        )
+                    except BleakError as err:
+                        self.logger.warning(
+                            "Challenge response write failed: %s", err
+                        )
                     return
 
                 if message.type == MessageType.CHALLENGE_ACCEPTED:
@@ -316,22 +322,72 @@ class DeviceReader:
             if decrypted.is_pre_key_exchange:
                 decrypted.verify_checksum()
 
-                if decrypted.type == MessageType.PEER_PUBKEY:
-                    peer_pubkey_response = self.encryption.msg_peer_pubkey(decrypted)
-                    await self.client.write_gatt_char(WRITE_UUID, peer_pubkey_response)
+                try:
+                    message_type = decrypted.type
+                except ValueError:
+                    self.logger.warning("Unknown key exchange message type")
                     return
 
-                if decrypted.type == MessageType.PUBKEY_ACCEPTED:
+                if message_type == MessageType.CHALLENGE:
+                    # Refreshes the IV the peer pubkey is later verified against.
+                    challenge_response = self.encryption.msg_challenge(decrypted)
+                    if challenge_response is not None:
+                        try:
+                            await self.client.write_gatt_char(
+                                WRITE_UUID,
+                                self.encryption.aes_encrypt(
+                                    challenge_response, key, None
+                                ),
+                            )
+                        except BleakError as err:
+                            self.logger.warning(
+                                "In-band challenge response write failed: %s", err
+                            )
+                    return
+
+                if message_type == MessageType.CHALLENGE_ACCEPTED:
+                    self.logger.debug("Challenge accepted (encrypted)")
+                    return
+
+                if message_type == MessageType.PEER_PUBKEY:
+                    try:
+                        peer_pubkey_response = self.encryption.msg_peer_pubkey(
+                            decrypted
+                        )
+                    except InvalidSignature:
+                        self.logger.warning(
+                            "Peer pubkey signature rejected, restarting handshake"
+                        )
+                        self.encryption.reset()
+                        self.encrypted_buffer.clear()
+                        return
+                    try:
+                        await self.client.write_gatt_char(
+                            WRITE_UUID, peer_pubkey_response
+                        )
+                    except BleakError as err:
+                        self.logger.warning("Peer pubkey write failed: %s", err)
+                    return
+
+                if message_type == MessageType.PUBKEY_ACCEPTED:
                     self.encryption.msg_key_accepted(decrypted)
                     return
+
+                return
 
             # Handle as message
             data = decrypted.buffer
 
-        # Save data
-        self.notify_response.extend(data)
-
         if self.notify_future is None:
             return
+
+        if self.notify_future.done():
+            # Future was already resolved or cancelled (e.g. response timeout),
+            # so this is a late or duplicate notification we can safely drop
+            self.logger.debug("Dropping notification for already completed future")
+            return
+
+        # Save data
+        self.notify_response.extend(data)
 
         self.notify_future.set_result(self.notify_response)

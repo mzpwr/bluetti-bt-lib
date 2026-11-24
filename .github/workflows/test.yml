@@ -25,3 +25,5 @@ jobs:
       run: python3 -m unittest discover -s tests/base_devices -p "*.py"
     - name: Run device unittests
       run: python3 -m unittest discover -s tests/devices -p "*.py"
+    - name: Run bluetooth unittests
+      run: python3 -m unittest discover -s tests/bluetooth -p "*.py"
