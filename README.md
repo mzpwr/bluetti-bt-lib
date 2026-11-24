@@ -87,20 +87,38 @@ Commands included in this library should only be used for testing.
 
 ### Scan for supported devices
 
-```bash
-usage: bluetti-scan [-h] [-r REGEX] [-s SCAN_TIME]
+The scanner discovers Bluetti devices by Bluetooth name. Without `-t`/`-s`, it stops after the first device found; with `-t SECONDS` (or `-s SECONDS`), it scans for that duration and lists all devices (deduplicated by address).
 
-Detect bluetti devices by bluetooth name
+```bash
+usage: bluetti-scan [-h] [-t SECONDS] [-f REGEX] [-r REGEX]
+
+Detect Bluetti devices by Bluetooth name
 
 options:
   -h, --help            show this help message and exit
+  -t SECONDS, --timeout SECONDS, -s SECONDS, --scan-time SECONDS
+                        Scan for this many seconds and list all discovered devices.
+                        If omitted, stop after the first device is found.
+  -f REGEX, --filter REGEX
+                        Only show devices whose Bluetooth name matches this regex
   -r REGEX, --regex REGEX
-                        Custom regex to match device name
-  -s SCAN_TIME, --scan-time SCAN_TIME
-                        How long to scan for devices (seconds)
+                        Custom regex to match device name (replaces built-in device list)
 ```
 
-Example output: `['EB3A', '00:00:00:00:00:00']`
+Examples:
+
+```bash
+# Stop at first device (legacy behaviour)
+bluetti-scan
+
+# Scan for 15 seconds and list all devices
+bluetti-scan -t 15
+
+# Only devices whose name matches (e.g. AC60 or EP600)
+bluetti-scan -t 10 -f "AC60|EP600"
+```
+
+Example output (one line per device): `['EB3A', '00:00:00:00:00:00']`
 
 ### Detect device type by mac address
 
@@ -127,22 +145,22 @@ Example output: `Device type is 'EB3A' with iot version 1 and serial 00000000000
 ### Read device data for supported devices
 
 ```bash
-usage: bluetti-read [-h] [-m MAC] [-t TYPE] [-e ENCRYPTION]
+usage: bluetti-read [-h] [-m MAC] [-t TYPE] [-e]
 
-Detect bluetti devices
+Read data from Bluetti devices
 
 options:
   -h, --help            show this help message and exit
   -m MAC, --mac MAC     Mac-address of the powerstation
   -t TYPE, --type TYPE  Type of the powerstation (AC70 f.ex.)
-  -e ENCRYPTION, --encryption ENCRYPTION
-                        Add this if encryption is needed
+  -e, --encryption      Use encryption (required for some devices, e.g. Handsfree 1)
 ```
 
-Example:
+Examples:
 
 ```bash
 bluetti-read -m 00:00:00:00:00:00 -t EB3A
+bluetti-read -m 00:00:00:00:00:00 -t "Handsfree 1" -e
 ```
 
 Example output:
@@ -166,32 +184,32 @@ FieldName.CTRL_POWER_LIFTING: False
 
 ### Write to supported device
 
-INFO: Devices with encryption are currently not supported!
-
 ```bash
-usage: bluetti-write [-h] [-m MAC] [-t TYPE] [--on ON] [--off OFF] [-v VALUE] [-e ENCRYPTION] field
+usage: bluetti-write [-h] [-m MAC] [-t TYPE] [--on] [--off] [-v VALUE] [-s SELECT] [-e] field
 
 Write to bluetti device
 
 positional arguments:
-  field                 Field name (ctrl_dc f.ex.)
+  field                 Field name (ctrl_ac, ctrl_dc, ctrl_led_mode, ...)
 
 options:
   -h, --help            show this help message and exit
   -m MAC, --mac MAC     Mac-address of the powerstation
   -t TYPE, --type TYPE  Type of the powerstation (AC70 f.ex.)
-  --on ON               Value to write
-  --off OFF             Value to write
+  --on                  Set field on (true)
+  --off                 Set field off (false)
   -v VALUE, --value VALUE
-                        Value to write (integer, see enum for value)
-  -e ENCRYPTION, --encryption ENCRYPTION
-                        Add this if encryption is needed
+                        Value to write (integer)
+  -s SELECT, --select SELECT
+                        Value to write to a Select/Enum field (e.g. COLD, STANDARD)
+  -e, --encryption      Use encryption (required for e.g. EL10, Handsfree 1)
 ```
 
-Example:
+Examples:
 
 ```bash
-bluetti-write -m 00:00:00:00:00:00 -t EB3A --on on ctrl_ac
+bluetti-write -m 00:00:00:00:00:00 -t EB3A --on ctrl_ac
+bluetti-write -m 00:00:00:00:00:00 -t EL10 -e -s COLD ctrl_led_mode
 ```
 
 ## Adding fields
@@ -203,7 +221,7 @@ After you got this information, you can use the `bluetti-readall` command to rea
 Here's how to use the `bluetti-readall` command:
 
 ```bash
-usage: bluetti-readall [-h] [-m MAC] [-v VERSION] [-e ENCRYPTION]
+usage: bluetti-readall [-h] [-m MAC] [-v VERSION] [-e]
 
 Detect bluetti devices
 
@@ -212,8 +230,7 @@ options:
   -m MAC, --mac MAC     Mac-address of the powerstation
   -v VERSION, --version VERSION
                         IoT protocol version
-  -e ENCRYPTION, --encryption ENCRYPTION
-                        Add this if encryption is needed
+  -e, --encryption      Use encryption (required for some devices, e.g. Handsfree 1)
 ```
 
 With the separate tool at [bluetti-bt-raw-reader](https://github.com/Patrick762/bluetti-bt-raw-reader) you can view those values in a more understandable way.
