@@ -7,8 +7,11 @@ from .BoolFieldNonZero import *
 from .DecimalArrayField import *
 from .DecimalField import *
 from .EnumField import *
+from .IntField import *
+from .NumberField import *
 from .SelectField import *
 from .SerialNumberField import *
+from .SignedDecimalField import *
 from .StringField import *
 from .SwapStringField import *
 from .SwitchField import *
